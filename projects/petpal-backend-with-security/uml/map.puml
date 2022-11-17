@@ -1,0 +1,158 @@
+@startuml
+
+interface Authentication {
+    +getPrincipal(): Object
+}
+
+interface UserDetails {
+    +getAuthorities(): Collection<GrantedAuthority>
+    +getPassword(): String
+    +getUsername(): String
+    +isAccountNonExpired(): boolean
+    +isAccountNonLocked(): boolean
+    +isCredentialsNonExpired(): boolean
+    +isEnabled(): boolean
+}
+
+interface GrantedAuthority {
+    +getAuthority(): String
+}
+
+class Owner {
+    +getAuthorities(): Collection<GrantedAuthority>
+    +getPassword(): String
+    +getUsername(): String
+    +isAccountNonExpired(): boolean
+    +isAccountNonLocked(): boolean
+    +isCredentialsNonExpired(): boolean
+    +isEnabled(): boolean
+}
+
+class Role {
+    +getAuthority(): String
+}
+
+interface UserService {
+    +authenticate(String username, String password): Authentication
+    +save(String username, String password): UserDetails
+}
+
+interface JwtUserService {
+
+    +generateJwtForUser(UserDetails user): String
+    +getUserFromJwt(String jwt): UserDetails
+
+}
+
+interface AuthenticationManager {
+    +authenticate(Authentication authentication): Authentication
+}
+
+class JwtUserServiceImpl {
+    -ownerDao: OwnerDao
+    -authenticationManager: AuthenticationManager
+    -passwordEncoder: PasswordEncoder
+
+    +authenticate(String username, String password): Authentication
+    +save(String username, String password): UserDetails
+
+    +generateJwtForUser(UserDetails user): String
+    +getUserFromJwt(String jwt): UserDetails
+}
+
+interface OwnerDao {
+    +findByLogin(String login): Owner
+}
+
+class OncePerRequestFilter {
+    #doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain): void
+}
+
+class SecurityFilter {
+    -userService: JwtUserService
+    #doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain): void
+    -extractTokenFromHeader(HttpServletRequest request): String
+    -setPrincipalInSecurityContext(UserDetails user): void
+}
+
+interface AuthenticationEntryPoint {
+    +commence(HttpServletRequest request, HttpServletResponse response,
+            AuthenticationException authException):void
+}
+
+class SecurityEntryPoint {
+    +commence(HttpServletRequest request, HttpServletResponse response,
+            AuthenticationException authException):void
+}
+
+class WebSecurityConfigurerAdapter {
+    #authenticationManagerBean: AuthenticationManager
+    #configure(HttpSecurity http): void
+}
+
+class SecurityConfigurer {
+    +securityFilter: SecurityFilter
+    +authenticationManagerBean: AuthenticationManager
+    #configure(HttpSecurity http): void
+}
+
+class AuthRequest {
+    -username: String
+    -password: String
+
+    +getUsername(): String
+	+setUsername(String username): void
+	+getPassword(): String
+	+setPassword(String password): void
+}
+
+class AuthResponse {
+	-token:String
+	-user:UserDetails
+
+    +AuthResponse(UserDetails user, String token)
+	+getToken():String
+	+getUser():UserDetails
+}
+
+class SecurityController {
+    -userService: JwtUserService
+    +authorize(@RequestBody AuthRequest requestDto): ResponseEntity<AuthResponse>
+    +register(@RequestBody AuthRequest requestDto): ResponseEntity<AuthResponse>
+}
+
+UserService <.. UserDetails
+UserService <.. Authentication
+
+UserDetails o-- GrantedAuthority
+
+Owner <|.. UserDetails
+Role <|.. GrantedAuthority
+
+Owner o-- Role
+
+UserService <|-- JwtUserService
+
+JwtUserService <|.. JwtUserServiceImpl
+
+AuthenticationManager <.. Authentication
+JwtUserServiceImpl <.. AuthenticationManager
+
+JwtUserServiceImpl o-- OwnerDao
+OwnerDao <.. Owner
+
+SecurityFilter o-- JwtUserService
+OncePerRequestFilter <|-- SecurityFilter
+AuthenticationEntryPoint <|.. SecurityEntryPoint
+
+WebSecurityConfigurerAdapter o-- AuthenticationManager
+
+WebSecurityConfigurerAdapter <|-- SecurityConfigurer
+SecurityConfigurer o-- SecurityFilter
+SecurityConfigurer o-- SecurityEntryPoint
+
+SecurityController o-- JwtUserService
+SecurityController <.. AuthRequest
+SecurityController <.. AuthResponse
+
+@enduml

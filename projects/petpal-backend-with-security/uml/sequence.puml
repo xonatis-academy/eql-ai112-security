@@ -1,0 +1,19 @@
+@startuml
+
+Debut -> POM: 1. spring security
+Debut -> POM: 1. jjwt
+POM -> Entity: 2. UserDetails
+POM -> Entity: 3. GrantedAuthority
+Entity -> Repository: 4. OwnerDao (findByLogin)
+Repository -> Service: 5. UserService
+Repository -> Service: 5. JwtUserService
+Repository -> Service: 6. JwtUserServiceImpl
+Service -> Configuration: 7. SecurityFilter
+Service -> Configuration: 8. SecurityEntryPoint
+Service -> Configuration: 9. SecurityConfigurer
+Configuration -> Controller: 10. SecurityController (register)
+Configuration -> Controller: 11. SecurityController (authorize)
+Configuration -> Controller: 12. PreAuthorize
+Controller -> Fin: 13. Dancefloor
+
+@enduml
